@@ -35,16 +35,24 @@ data3 = [X(:) Y(:) THETA3(:)];
 
 %% Splitting data into training and validation sets
 valid_frac = 0.1;   % value used to determine the fraction of total data to be used for validation, thus allowing me to vary it as necessary.
+                       %rest of data is used for training.
 
 
 dim=size(data1);
 datTot=dim(1);
 
-idx = randperm(datTot);
+idx = randperm(datTot);   % Creates a randomised  numbers up to the total
 indexToGroup1 = (idx<=valid_frac*datTot);
-indexToGroup2 = (idx>valid_frac*datTot);
-Vdata1 = data1(indexToGroup1,:);
-Tdata1 = data1(indexToGroup2,:);
+indexToGroup2 = (idx>valid_frac*datTot);   %mulitplies by the fraction denoting the desired quantity of validation data points, and creates two distinct groups
+                                            %index used to denote
+                                            %membership of each group,
+                                            %either 1 or 0
+                                            
+                                            
+Vdata1 = data1(indexToGroup1,:); %creates validation data set using index and original data set
+Tdata1 = data1(indexToGroup2,:); %creates training data set 
+
+%-----%
 
 dim=size(data2);
 datTot=dim(1);
@@ -54,6 +62,8 @@ indexToGroup1 = (idx<=valid_frac*datTot);
 indexToGroup2 = (idx>valid_frac*datTot);
 Vdata2 = data1(indexToGroup1,:);
 Tdata2 = data1(indexToGroup2,:);
+
+%-----%
 
 dim=size(data3);
 datTot=dim(1);
