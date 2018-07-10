@@ -1,3 +1,7 @@
+%% Sebastian Oakes 2018 %%
+%%% Program for creating an adaptive neuro fuzzy inference system,
+%%% designed to control a planar 3R robot arm %%%
+
 
 clc
 clear
