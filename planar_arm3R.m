@@ -1,6 +1,6 @@
 %% Sebastian Oakes 2018 %%
-%%% Program for creating an adaptive neuro fuzzy inference system,
-%%% designed to control a planar 3R robot arm %%%
+%%% Program for generating an adaptive neuro-fuzzy inference system (ANFIS),
+%%% designed for control of a planar, 3 link robot arm. Input  %%%
 
 
 clc
@@ -32,25 +32,31 @@ Y = (l1*sin(THETA1))+(l2*sin(THETA1+THETA2))+(l3*sin(THETA1+THETA2+THETA3)); % c
 phi = THETA1+THETA2+THETA3;
 
 
+%%%create data sets - X and Y form inputs, THETA the output.
 data1 = [X(:) Y(:) THETA1(:)]; % create x-y-theta dataset for all link angles
 data2 = [X(:) Y(:) THETA2(:)]; 
 data3 = [X(:) Y(:) THETA3(:)]; 
+ 
 
 
-%% Splitting data into training and validation sets
-valid_frac = 0.1;   % value used to determine the fraction of total data to be used for validation, thus allowing me to vary it as necessary.
-                       %rest of data is used for training.
+%% Splitting data into training, validation and test sets
+%Process ensures that data set is split randomly, but ensures no crossover
+%between validation and training
 
+valid_frac = 0.1;% values used to determine the fraction of total data to be used for validation and test, thus allowing me to vary it as necessary.
+test_frac = 0.1; 
+comb_frac = valid_frac+test_frac;
 
 dim=size(data1);
 datTot=dim(1);
 
-idx = randperm(datTot);   % Creates a randomised  numbers up to the total
+
+%mulitplies by the fraction denoting the desired quantity of validation data points, and creates two distinct groups
+%index used to denote either 1 or 0
+idx = randperm(datTot);   % Randomise ordering of the data points, whilst retaining an index relating 
 indexToGroup1 = (idx<=valid_frac*datTot);
-indexToGroup2 = (idx>valid_frac*datTot);   %mulitplies by the fraction denoting the desired quantity of validation data points, and creates two distinct groups
-                                            %index used to denote
-                                            %membership of each group,
-                                            %either 1 or 0
+indexToGroup2 = (idx<=valid_frac*datTot);  
+indexToGroup3 = (idx);
                                             
                                             
 Vdata1 = data1(indexToGroup1,:); %creates validation data set using index and original data set
@@ -79,7 +85,7 @@ Vdata3 = data1(indexToGroup1,:);
 Tdata3 = data1(indexToGroup2,:);
 
 
-%% genfis for theta 1 training and validation dataset
+%% Generate fuzzy inference system (genfis) for theta 1 training and validation dataset
 numMFs = 6;
 mfType = 'gaussmf';
 Tfis1 =genfis1(Tdata1,numMFs,mfType);
