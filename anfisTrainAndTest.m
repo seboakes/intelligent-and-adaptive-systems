@@ -169,9 +169,9 @@ ResultsArray3 = [];
     %%% 1st   %%%
     
     genOpt = genfisOptions('GridPartition');  %declare the use of the genfis options 
-    genOpt.NumMembershipFunctions = 4;
+    genOpt.NumMembershipFunctions = 7;
     
-    genOpt.InputMembershipFunctionType = ["trimf"];
+    genOpt.InputMembershipFunctionType = ["gaussmf"];
 
     initFIS1 = genfis(TrainData1(:,1:2),TrainData1(:,3), genOpt);
     opt = anfisOptions('InitialFIS', initFIS1);
@@ -179,7 +179,7 @@ ResultsArray3 = [];
     opt.DisplayFinalResults = 1;
     opt.DisplayStepSize = 0;
     opt.DisplayErrorValues = 0;
-    eNum = 400;
+    eNum = 130;
     epochTally1 = (1:eNum)';
     opt.EpochNumber = eNum;
     [fis1,trainError1,~,chkFIS1,chkError1] = anfis(TrainData1,opt);
@@ -196,14 +196,14 @@ ResultsArray3 = [];
     
     %% 2nd  %%%
     genOpt = genfisOptions('GridPartition');  %declare the use of the genfis options 
-    genOpt.NumMembershipFunctions = 4;
+    genOpt.NumMembershipFunctions = 7;
 
     genOpt.InputMembershipFunctionType = ["gaussmf"];
     initFIS2 = genfis(TrainData2(:,1:2),TrainData2(:,3), genOpt);
     
     opt = anfisOptions('InitialFIS', initFIS2);
     opt.ValidationData = ValidData2;
-    eNum = 200;
+    eNum = 130;
     epochTally2 = (1:eNum)';
     opt.EpochNumber = eNum;
     [fis2,trainError2,~,chkFIS2,chkError2] = anfis(TrainData2,opt);
@@ -220,14 +220,14 @@ ResultsArray3 = [];
     %% 3rd %%%
     
     genOpt = genfisOptions('GridPartition');  %declare the use of the genfis options          
-    genOpt.NumMembershipFunctions = 4;
+    genOpt.NumMembershipFunctions = 7;
 
     genOpt.InputMembershipFunctionType = ["gaussmf"];
     initFIS3 = genfis(TrainData3(:,1:2),TrainData3(:,3), genOpt);
 %     
     opt = anfisOptions('InitialFIS', initFIS3);
     opt.ValidationData = ValidData3;
-    eNum = 400;
+    eNum = 120;
     epochTally3 = (1:eNum)';
     opt.EpochNumber = eNum;
     [fis3,trainError3,~,chkFIS3,chkError3] = anfis(TrainData3,opt);
@@ -244,8 +244,6 @@ ResultsArray3 = [];
     
     
 
-clear('initFIS1', 'initFIS2', 'initFIS3' );
-
 
 % figure();
 % [x,mf] = plotmf(chkFIS,'input',1);
@@ -256,4 +254,37 @@ clear('initFIS1', 'initFIS2', 'initFIS3' );
 % [x,mf] = plotmf(fis1,'input',1);
 % plot(x,mf);
 % title('Membership Functions after ANFIS Training (Theta 1)');
+
+
+
+%% Testing Trials
+
+
+xpos = linspace(-5,10,100);
+ypos = linspace(2,10,100);
+testPath = [xpos' ypos'];
+
+figure();
+predTHETA1 = evalfis(testPath, chkFIS1);   %theta values predicted by pretrained anfis networks
+predTHETA2 = evalfis(testPath, chkFIS2);
+predTHETA3 = evalfis(testPath, chkFIS3);
+
+ Xpred = (l1*cos(predTHETA1))+(l2*cos(predTHETA1+predTHETA2))+(l3*cos(predTHETA1+predTHETA2+predTHETA3));          % compute x coordinates 
+ Ypred = (l1*sin(predTHETA1))+(l2*sin(predTHETA1+predTHETA2))+(l3*sin(predTHETA1+predTHETA2+predTHETA3)); % compute y coordinates
+ 
+ figure()
+ hold on;
+ axis equal
+ xlim([-10 20]);
+ ylim([-10 20]);
+scatter(xpos, ypos, 'g');
+scatter(Xpred, Ypred, 'b');
+axis
+
+% theta1diff = testPath - predTHETA1;
+% plot(theta1diff);
+
+
+
+
 
