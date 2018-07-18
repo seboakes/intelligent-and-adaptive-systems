@@ -166,68 +166,71 @@ ResultsArray2 = [];
 ResultsArray3 = [];
 
 for i = 7
-%for i = 2:7
+%for i = 2:5
 
 
     %%% 1st   %%%
     
-    genOpt = genfisOptions('GridPartition');  %declare the use of the genfis options 
-    genOpt.NumMembershipFunctions = i;
-    
-    genOpt.InputMembershipFunctionType = ["gbellmf"];
-
-    initFIS1 = genfis(TrainData1(:,1:2),TrainData1(:,3), genOpt);
-    opt = anfisOptions('InitialFIS', initFIS1);
-    opt.ValidationData = ValidData1;
-    eNum = 150;
-    epochTally1 = (1:eNum)';
-    opt.EpochNumber = eNum;
-    [fis1,trainError1,~,chkFIS1,chkError1] = anfis(TrainData1,opt);
-    ResultsArray1(i,1) = i;
-    ResultsArray1(i,2) = min(chkError1);
-    disp('iteration complete')
-    pause(1);
-    
-            figure();
-    plot(epochTally1,trainError1,  epochTally1, chkError1);
-    legend('training error','validation error');
-    title(['Theta Training and validation error, with ',num2str(i),' MFs'])
-    
-    
-    %%% 2nd  %%%
 %     genOpt = genfisOptions('GridPartition');  %declare the use of the genfis options 
 %     genOpt.NumMembershipFunctions = i;
-% 
-%     genOpt.InputMembershipFunctionType = ["gaussmf"];
-%     initFIS2 = genfis(TrainData2(:,1:2),TrainData2(:,3), genOpt);
 %     
-%     opt = anfisOptions('InitialFIS', initFIS2);
-%     opt.ValidationData = ValidData2;
-%     eNum = 200;
-%     epochTally2 = (1:eNum)';
+%     genOpt.InputMembershipFunctionType = ["gaussmf"];
+% 
+%     initFIS1 = genfis(TrainData1(:,1:2),TrainData1(:,3), genOpt);
+%     opt = anfisOptions('InitialFIS', initFIS1);
+%     opt.ValidationData = ValidData1;
+%     opt.DisplayFinalResults = 1;
+%     opt.DisplayStepSize = 0;
+%     opt.DisplayErrorValues = 0;
+%     eNum = 800;
+%     epochTally1 = (1:eNum)';
 %     opt.EpochNumber = eNum;
-%     [fis2,trainError2,~,chkFIS2,chkError2] = anfis(TrainData2,opt);
-%     ResultsArray2(i,1) = i;
-%     ResultsArray2(i,2) = min(chkError2);
+%     [fis1,trainError1,~,chkFIS1,chkError1] = anfis(TrainData1,opt);
+%     ResultsArray1(i,1) = i;
+%     ResultsArray1(i,2) = min(chkError1);
 %     disp('iteration complete')
 %     pause(1);
 %     
 %             figure();
-%     plot(epochTally2,trainError2,  epochTally2, chkError2);
+%     plot(epochTally1,trainError1,  epochTally1, chkError1);
 %     legend('training error','validation error');
-%     title(['Theta 2 Training and validation error, with ',num2str(i),' MFs'])
+%     title(['Theta Training and validation error, with ',num2str(i),' MFs'])
+    
+    
+    %%% 2nd  %%%
+    genOpt = genfisOptions('GridPartition');  %declare the use of the genfis options 
+    genOpt.NumMembershipFunctions = i;
+
+    genOpt.InputMembershipFunctionType = ["gaussmf"];
+    initFIS2 = genfis(TrainData2(:,1:2),TrainData2(:,3), genOpt);
+    
+    opt = anfisOptions('InitialFIS', initFIS2);
+    opt.ValidationData = ValidData2;
+    eNum = 400;
+    epochTally2 = (1:eNum)';
+    opt.EpochNumber = eNum;
+    [fis2,trainError2,~,chkFIS2,chkError2] = anfis(TrainData2,opt);
+    ResultsArray2(i,1) = i;
+    ResultsArray2(i,2) = min(chkError2);
+    disp('iteration complete')
+    pause(1);
+    
+            figure();
+    plot(epochTally2,trainError2,  epochTally2, chkError2);
+    legend('training error','validation error');
+    title(['Theta 2 Training and validation error, with ',num2str(i),' MFs'])
 %     
-%     %% 3rd %%%
-%     
+    %% 3rd %%%
+    
 %     genOpt = genfisOptions('GridPartition');  %declare the use of the genfis options          
 %     genOpt.NumMembershipFunctions = i;
 % 
 %     genOpt.InputMembershipFunctionType = ["gaussmf"];
 %     initFIS3 = genfis(TrainData3(:,1:2),TrainData3(:,3), genOpt);
-%     
+% %     
 %     opt = anfisOptions('InitialFIS', initFIS3);
 %     opt.ValidationData = ValidData3;
-%     eNum = 200;
+%     eNum = 400;
 %     epochTally3 = (1:eNum)';
 %     opt.EpochNumber = eNum;
 %     [fis3,trainError3,~,chkFIS3,chkError3] = anfis(TrainData3,opt);
