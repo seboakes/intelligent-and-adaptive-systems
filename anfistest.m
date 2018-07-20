@@ -10,8 +10,8 @@ import pyplot.*
 
 
 l1 = 10; % length of first arm link 
-l2 = 7; % length of second arm link
-l3 = 4;
+l2 = 10; % length of second arm link
+l3 = 10;
 
 % 
 theta1 = 0:0.1:pi/2; % joint ranges

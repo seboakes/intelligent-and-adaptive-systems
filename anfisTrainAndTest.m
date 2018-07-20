@@ -11,12 +11,14 @@ import pyplot.*
 
 l1 = 10; % length of first arm link 
 l2 = 7; % length of second arm link
-l3 = 4;
+l3 = 5;
 
+
+dTheta = 0.05
 % 
-theta1 = 0:0.1:pi/2; % joint ranges
-theta2 = 0:0.1:pi; 
-theta3 = 0:0.1:pi; 
+theta1 = 0:dTheta:pi/2; % joint ranges
+theta2 = 0:dTheta:pi; 
+theta3 = 0:dTheta:pi; 
 
 
 % theta1 = 0:0.2:pi/2; % joint ranges
@@ -30,9 +32,9 @@ for i=1:length(theta1)
     for j = 1:length(theta2)
         for k = 1:length(theta3);
             
-            THETA1=0+0.1*i;
-            THETA2= 0+0.1*j;
-            THETA3 = 0+0.1*k;
+            THETA1=0+dTheta*i;
+            THETA2= 0+dTheta*j;
+            THETA3 = 0+dTheta*k;
             
             
             X = (l1*cos(THETA1))+(l2*cos(THETA1+THETA2))+(l3*cos(THETA1+THETA2+THETA3));          % compute x coordinates 
@@ -169,7 +171,7 @@ ResultsArray3 = [];
     %%% 1st   %%%
     
     genOpt = genfisOptions('GridPartition');  %declare the use of the genfis options 
-    genOpt.NumMembershipFunctions = 7;
+    genOpt.NumMembershipFunctions = 6;
     
     genOpt.InputMembershipFunctionType = ["gaussmf"];
 
@@ -178,8 +180,8 @@ ResultsArray3 = [];
     opt.ValidationData = ValidData1;
     opt.DisplayFinalResults = 1;
     opt.DisplayStepSize = 0;
-    opt.DisplayErrorValues = 0;
-    eNum = 130;
+    opt.DisplayErrorValues = 1;
+    eNum = 50;
     epochTally1 = (1:eNum)';
     opt.EpochNumber = eNum;
     [fis1,trainError1,~,chkFIS1,chkError1] = anfis(TrainData1,opt);
@@ -219,15 +221,15 @@ ResultsArray3 = [];
     
     %% 3rd %%%
     
-    genOpt = genfisOptions('GridPartition');  %declare the use of the genfis options          
-    genOpt.NumMembershipFunctions = 7;
+    genOpt = genfisOptions('SubtractiveClustering');  %declare the use of the genfis options          
+    %genOpt.NumMembershipFunctions = 7;
 
-    genOpt.InputMembershipFunctionType = ["gaussmf"];
+   % genOpt.InputMembershipFunctionType = ["gaussmf"];
     initFIS3 = genfis(TrainData3(:,1:2),TrainData3(:,3), genOpt);
 %     
     opt = anfisOptions('InitialFIS', initFIS3);
     opt.ValidationData = ValidData3;
-    eNum = 120;
+    eNum = 100;
     epochTally3 = (1:eNum)';
     opt.EpochNumber = eNum;
     [fis3,trainError3,~,chkFIS3,chkError3] = anfis(TrainData3,opt);
@@ -259,12 +261,47 @@ ResultsArray3 = [];
 
 %% Testing Trials
 
+x1 = linspace(-5,12,100);
+y1 = linspace(16,16,100);
 
-xpos = linspace(-5,10,100);
-ypos = linspace(2,10,100);
-testPath = [xpos' ypos'];
+x2 = linspace(12,12,100);
+y2 = linspace(16,14,100);
 
-figure();
+x3 = linspace(12,-7,100);
+y3 = linspace(14,14,100);
+
+x4 = linspace(-7,-7,100);
+y4 = linspace(14,12,100);
+
+x5 = linspace(-7,15,100);
+y5 = linspace(12,12,100);
+
+x6 = linspace(15,15,100);
+y6 = linspace(12,10,100);
+
+x7 = linspace(15,-8,100);
+y7 = linspace(10,10,100);
+
+x8 = linspace(-8,-7,100);
+y8 = linspace(10,8,100);
+
+
+
+xAll = [x1 x2 x3 x4 x5 x6 x7]';
+yAll = [y1 y2 y3 y4 y5 y6 y7]';
+
+
+
+testPath = [xAll yAll];
+
+%testPath = [TrainData1(:,1) TrainData1(:,2)];
+
+% xpos = linspace(-5,10,100);
+% ypos = linspace(2,10,100);
+% testPath1 = [xpos' ypos'];
+
+
+
 predTHETA1 = evalfis(testPath, chkFIS1);   %theta values predicted by pretrained anfis networks
 predTHETA2 = evalfis(testPath, chkFIS2);
 predTHETA3 = evalfis(testPath, chkFIS3);
@@ -277,12 +314,13 @@ predTHETA3 = evalfis(testPath, chkFIS3);
  axis equal
  xlim([-10 20]);
  ylim([-10 20]);
-scatter(xpos, ypos, 'g');
+scatter(xAll, yAll, 'g');
 scatter(Xpred, Ypred, 'b');
 axis
+% 
+%  plot(TrainData1(:,1),TrainData1(:,2),'r.');
+%   axis equal;
 
-% theta1diff = testPath - predTHETA1;
-% plot(theta1diff);
 
 
 
