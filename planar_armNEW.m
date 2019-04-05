@@ -1,0 +1,504 @@
+%% Sebastian Oakes 2018 %%
+%%% Program for generating an adaptive neuro-fuzzy inference system (ANFIS),
+%%% designed for control of a planar, 3 link robot arm. Input  %%%
+
+
+clc
+clear
+close all
+
+
+%% library imports
+import math.*
+import pyplot.*
+
+%% Set global Variables
+
+global L1 L2 L3;
+
+%% Switches for various program features. 1 = on
+
+armCheck=1;  %switch to display all data points and sample arm position (for clarifying desired arm movement ranges)
+
+tswitch1 = 1;  %switches for turning on and off training for each joint when required.
+tswitch2 = 1;
+tswitch3 = 1;
+
+mfplot = 1;   %switches for plotting membership functions before and after training
+mfplot_post = 1;
+
+GP = 0; %switches for intial MF distribution types
+SC = 1;
+FCM = 0;
+
+angleStepSize = 0.08;
+
+%% anfis/genfis parameters
+if GP ==1
+MFnum1 = [4 4];  %num of membership functions
+MFnum2 = [4 4];
+MFnum3 = [5 5];
+else
+end
+
+eNum1 = 300; %epoch limits
+eNum2 = 300;
+eNum3 = 300;
+
+
+
+
+
+%% setting arm parameters
+
+L1 = 10; % length of arm links
+L2 = 7; 
+L3 = 5;
+
+
+% theta1 = 0:angleStepSize:pi; % joint ranges
+% theta2 = 0:angleStepSize/2:pi/2; 
+% theta3 = -pi/2:angleStepSize:pi/2; 
+jmin1 = 0;
+jmax1 = pi;
+jrange1 = jmax1-jmin1;
+jmin2 = 0;
+jmax2 = pi/2;
+jrange2 = jmax2-jmin2;
+jmin3 = -pi/2;
+jmax3 = pi/2;
+jrange3 = jmax3-jmin3;
+
+qMod = 0.1;  %allows me to alter the overall quantity of data points without upsetting the ratios of
+
+theta1 = jmin1:qMod*(jrange1/2):jmax1; % joint ranges - step size is input as a fraction of the total range
+theta2 = jmin2:qMod*(jrange2/4):jmax2; 
+theta3 = jmin3:qMod*(jrange3/2):jmax3; 
+
+n=1;
+
+
+dataRows = length(theta1)* length(theta2) * length(theta3);     
+FKresults = zeros(dataRows,5);  
+
+for i=theta1
+    for j=theta2
+        for k=theta3
+            
+            
+           [X,Y] = forward_kin(i,j,k);    % call function to determine FK results
+           
+           % X = (l1*cos(i))+(l2*cos(i+j))+(l3*cos(i+j+k));          % compute x coordinates 
+            %Y = (l1*sin(i))+(l2*sin(i+j))+(l3*sin(i+j+k)); % compute y coordinates
+           
+            FKresults(n,1) = i;   % populating the data array
+            FKresults(n,2) = j;
+            FKresults(n,3) = k;
+            FKresults(n,4) = X;
+            FKresults(n,5) = Y;
+            n=n+1;
+            
+        end
+    end
+end
+
+
+
+if armCheck==1   %% allows switching
+    %%Checking desired arm config
+%     i=pi;
+%     j=pi/2;
+%     k=pi/2;
+    i=0;
+    j=0;
+    k=-pi/2;
+    [X,Y] = forward_kin(i,j,k);
+
+
+    jointPosArray(1,1) = 0;
+    jointPosArray(1,2) = 0;
+    jointPosArray(2,1) = (L1*cos(i));
+    jointPosArray(2,2) = (L1*sin(i)) ; 
+    jointPosArray(3,1) = (L1*cos(i))+(L2*cos(i+j));
+    jointPosArray(3,2) = (L1*sin(i))+(L2*sin(i+j));
+    jointPosArray(4,1) = (L1*cos(i))+(L2*cos(i+j))+(L3*cos(i+j+k));
+    jointPosArray(4,2) = (L1*sin(i))+(L2*sin(i+j))+(L3*sin(i+j+k));
+ 
+    figure('name','Diagram of data points and joint position visualisation');
+    axis equal;
+    hold on
+    scatter(FKresults(:,4),FKresults(:,5),'.');
+    plot(jointPosArray(:,1),jointPosArray(:,2),'r-o');
+   
+else
+end
+
+%% Split data into training, validation and test sets
+%training and validation sets used during anfis training, test used to
+%evaluate trained system
+
+valid_frac = 0.2;
+test_frac = 0.2;
+comb_frac = valid_frac+test_frac;
+
+
+dim=size(FKresults);
+datTot=dim(1);
+datValid = 0.2*datTot;
+datTest = 0.2*datTot;
+datTrain = (1-comb_frac)*datTot;
+
+%mulitplies by the fraction denoting the desired quantity of validation data points, and creates two distinct groups
+%index used to denote either 1 or 0
+idx = randperm(datTot);   % Randomise ordering of the data points, whilst retaining an index relating them
+
+%use index to split data set into validation, test, training
+indexToGroup1 = (idx<=valid_frac*datTot);  %validation data
+indexToGroup2 = (idx<=comb_frac*datTot & idx>valid_frac*datTot);   % test data
+indexToGroup3 = (idx>comb_frac*datTot); %training data
+                                            
+
+%create validation data set using index and original data set
+valid_data = FKresults(indexToGroup1,:); 
+test_data = FKresults(indexToGroup2,:); 
+train_data = FKresults(indexToGroup3,:);
+
+%create individual training, validation, test data sets for each joint
+theta1_training = [train_data(:,4),train_data(:,5),train_data(:,1)];
+%theta1_training = theta1_training(randperm(size(theta1_training,1)),:);
+
+theta2_training = [train_data(:,4),train_data(:,5), train_data(:,2)];
+theta3_training = [train_data(:,4),train_data(:,5),train_data(:,3)];
+
+theta1_valid = [valid_data(:,4),valid_data(:,5),valid_data(:,1)];
+theta2_valid = [valid_data(:,4),valid_data(:,5),valid_data(:,2)];
+theta3_valid = [valid_data(:,4),valid_data(:,5),valid_data(:,3)];
+
+theta1_test = [test_data(:,4),test_data(:,5),test_data(:,1)];
+theta2_test = [test_data(:,4),test_data(:,5),test_data(:,2)];
+theta3_test = [test_data(:,4),test_data(:,5),test_data(:,3)];
+
+%plot results
+%scatter(valid_data(:,4),valid_data(:,5),'.');
+%scatter(test_data(:,4),test_data(:,5),'.');
+%scatter(train_data(:,4),train_data(:,5),'.');
+
+%% Generate initial fuzzy inference systems
+
+%If statements for each type of partitioning/clustering. Can be switched at
+%top
+
+if SC ==1  %
+opt = genfisOptions('SubtractiveClustering');
+opt.Verbose = true;
+
+opt.SquashFactor = 1.25;  % +ve scalar, default 1.25
+opt.ClusterInfluenceRange = 0.5;  %default 0.5 in range [0,1] - smaller range gives more small clusters
+else
+end
+
+if FCM==1
+opt = genfisOptions('FCMClustering');
+opt.Exponent = 2; %default 2 - decrease to improve clustering results
+opt.NumClusters = 'auto';
+else
+end
+
+
+if GP==1 
+opt = genfisOptions('GridPartition');
+ opt.InputMembershipFunctionType = ["gaussmf" "gaussmf"];
+opt.InputMembershipFunctionType = ["gbellmf" "gbellmf"];
+ opt.InputMembershipFunctionType = ["dsigmf" "dsigmf"];
+ opt.InputMembershipFunctionType = ["trimf" "trimf"];
+else
+end
+
+
+% 'GridPartition' — Generate input membership functions by uniformly partitioning the input variable ranges, and create a single-output Sugeno fuzzy system. The fuzzy rule base contains one rule for each input membership function combination.
+% 'SubtractiveClustering' — Generate a Sugeno fuzzy system using membership functions and rules derived from data clusters found using subtractive clustering of input and output data. For more information on subtractive clustering, see subclust.
+% 'FCMClustering' — Generate a fuzzy system using membership function and rules derived from data clusters found using FCM clustering of input and output data. For more information on FCM clustering, see fcm.
+
+if tswitch1==1  
+   if GP == 1 
+   opt.NumMembershipFunctions = MFnum1; %simply present to allow smoother transitioning between gridP/clustering
+   else
+   end
+  
+fis1 = genfis(theta1_training(:,1:2),theta1_training(:,3), opt);  %generate the first inference system
+else
+end
+if tswitch2==1
+   if GP == 1 
+   opt.NumMembershipFunctions = MFnum2;
+   else
+   end
+fis2 = genfis(theta2_training(:,1:2),theta2_training(:,3), opt);
+else
+end
+if tswitch3==1
+   if GP == 1 
+   opt.NumMembershipFunctions = MFnum3;
+   else
+   end
+fis3 = genfis(theta3_training(:,1:2),theta3_training(:,3), opt);
+else
+end
+
+
+
+if mfplot==1   %Plot membership functions if needed (pretraining)
+    
+    figure();
+    title('input MFs after training');
+    
+    if tswitch1==1
+    [x,mf] = plotmf(fis1,'input',1);  %theta 1 - 2 inputs
+    subplot(6,1,1)
+    plot(x,mf)
+    xlabel('theta 1 input 1 (gaussmf)')
+    [x,mf] = plotmf(fis1,'input',2);
+    subplot(6,1,2)
+    plot(x,mf)
+    xlabel('theta 1 input 2 (gaussmf)');
+    else
+    end
+    
+    if tswitch2==1
+    [x,mf] = plotmf(fis2,'input',1);  %theta 2 - 2 inputs
+    subplot(6,1,1)
+    subplot(6,1,3)
+    plot(x,mf)
+    xlabel('theta 2 input 1 (gaussmf)')
+    [x,mf] = plotmf(fis2,'input',2);
+    subplot(6,1,4)
+    plot(x,mf)
+    xlabel('theta 2 input 2 (gaussmf)');
+    else
+    end
+    
+    if tswitch3==1
+    [x,mf] = plotmf(fis3,'input',1);  %theta 3 - 2 inputs
+    subplot(6,1,1)
+    subplot(6,1,5)
+    plot(x,mf)
+    xlabel('theta 3 input 1 (gaussmf)')
+    [x,mf] = plotmf(fis3,'input',2);
+    subplot(6,1,6)
+    plot(x,mf)
+    xlabel('theta 3 input 2 (gaussmf)');
+    else
+    end
+    
+else
+end
+
+%% Train ANFIS networks
+
+
+
+
+%% ANFIS1
+if tswitch1==1
+    
+    % Theta 1 training
+    
+    EpochNum = eNum1;
+    
+    opt = anfisOptions('InitialFIS',fis1,'EpochNumber',40);
+    opt.InitialFIS = fis1;
+    opt.ValidationData = theta1_valid;
+    opt.EpochNumber = EpochNum;
+    opt.DisplayANFISInformation = 1;
+    opt.DisplayErrorValues = 1;
+    opt.DisplayFinalResults = 1;
+    opt.OptimizationMethod = 1;
+    opt.InitialStepSize = 0.01;  %step size - default 0.01
+    opt.StepSizeDecreaseRate = 0.9; %default 0.9
+    opt.StepSizeIncreaseRate = 1.1; %default 1.1
+    
+    %train anfis 
+    %anfis1 is the network at max epoch, opt_anfis is the optimal anfis
+    %network (lowest validation error.)
+
+    disp('Training first ANFIS network...');
+    [anfis1,training_error1,ss,opt_anfis1,valid_error1]=anfis(theta1_training,opt);
+    
+    figure();
+    
+    x = 1:EpochNum;
+    plot(x,training_error1,'-b',x,valid_error1,'-r');
+    title('theta 1 training vs validation');
+    xlabel('epochs');
+    ylabel('Error');
+    
+    
+        
+
+else
+end
+
+%% ANFIS2
+
+if tswitch2 ==1
+    %theta 2 training
+    
+    EpochNum = eNum2;
+
+    opt = anfisOptions('InitialFIS',fis2,'EpochNumber',40);
+    opt.InitialFIS = fis2;
+    opt.ValidationData = theta2_valid;
+    opt.EpochNumber = EpochNum;
+    opt.DisplayANFISInformation = 1;
+    opt.DisplayErrorValues = 1;
+    opt.DisplayFinalResults = 1;
+    opt.OptimizationMethod = 1;
+    
+    disp('Training second ANFIS network...');
+    [anfis2,training_error2,~,opt_anfis2,opt_error2]=anfis(theta2_training,opt);
+    
+    figure();
+    
+    x = 1:EpochNum;
+    plot(x,training_error2,'-b',x,opt_error2,'-r');
+    title('theta 2 training vs validation')
+    xlabel('epochs')
+    ylabel('Error')
+    
+    
+else
+end
+
+%% ANFIS3
+
+if tswitch3==1
+%theta 3 training
+EpochNum = eNum3;
+
+opt = anfisOptions('InitialFIS',fis3,'EpochNumber',40);
+opt.InitialFIS = fis3;
+opt.ValidationData = theta3_valid;
+opt.EpochNumber = EpochNum;
+opt.DisplayANFISInformation = 1;
+opt.DisplayErrorValues = 1;
+opt.DisplayFinalResults = 1;
+opt.OptimizationMethod = 1;
+
+disp('Training third ANFIS network...');
+[anfis3,training_error3,~,opt_anfis3,opt_error3]=anfis(theta3_training,opt);
+
+figure();
+    
+    x = 1:EpochNum;
+    plot(x,training_error3,'-b',x,opt_error3,'-r');
+    title('theta 3 training vs validation')
+    xlabel('epochs')
+    ylabel('Error')
+
+else
+end
+
+
+
+
+
+
+
+%% Plot membership functions after training 
+
+if mfplot_post ==1   %Plot membership functions if needed
+    
+    figure();
+    title('input MFs after training');
+    
+    if tswitch1 ==1
+    [x,mf] = plotmf(opt_anfis1,'input',1);  %theta 1 - 2 inputs
+    subplot(6,1,1)
+    plot(x,mf)
+    xlabel('theta 1 input 1 (post)')
+    [x,mf] = plotmf(opt_anfis1,'input',2);
+    subplot(6,1,2)
+    plot(x,mf)
+    xlabel('theta 1 input 2 (post)');
+    else
+    end
+    if tswitch2 ==1
+    [x,mf] = plotmf(opt_anfis2,'input',1);  %theta 2 - 2 inputs
+    subplot(6,1,1)
+    subplot(6,1,3)
+    plot(x,mf)
+    xlabel('theta 2 input 1 (post)')
+    [x,mf] = plotmf(opt_anfis2,'input',2);
+    subplot(6,1,4)
+    plot(x,mf)
+    xlabel('theta 2 input 2 (post)');
+    else 
+    end
+    
+    if tswitch3==1
+    [x,mf] = plotmf(opt_anfis3,'input',1);  %theta 3 - 2 inputs
+    subplot(6,1,1)
+    subplot(6,1,5)
+    plot(x,mf)
+    xlabel('theta 3 input 1 (post)')
+    [x,mf] = plotmf(opt_anfis3,'input',2);
+    subplot(6,1,6)
+    plot(x,mf)
+    xlabel('theta 3 input 2 (post)');
+    else
+    end
+    
+else
+end
+
+%% Feed testing data sets into (optimal) trained anfis networks
+
+
+if tswitch1 == 1
+eval_results1 = evalfis(theta1_test(:,1:2), opt_anfis1);
+else
+end
+
+if tswitch2 ==1
+eval_results2 = evalfis(theta2_test(:,1:2), opt_anfis2);
+else
+end
+
+if tswitch3 == 1
+eval_results3 = evalfis(theta3_test(:,1:2), opt_anfis3);
+else
+end
+
+%% Use FK function to turn evaluation results back into X-Y end effector coordinates
+
+[anfisX,anfisY] = forward_kin(eval_results1,eval_results2,eval_results3);
+
+
+
+
+
+%% Plot quiver diagram to display errors
+%quiver plot, u/v are the error vectors, ie the difference between x-y
+%coordinates from test set and the x-y positions resulting from the FK of
+%the joint angles that came from the evaluation of the aforementioned
+%coordinates
+
+x = theta1_test(:,1);
+y = theta1_test(:,2);
+u = theta1_test(:,1) - anfisX;
+v = theta1_test(:,2) - anfisY;
+% u = anfisX - theta1_test(:,1);
+% v = anfisY - theta1_test(:,2);
+
+figure();
+scatter(test_data(:,4),test_data(:,5),'.');
+hold on
+
+q = quiver(x,y,u,v,0);
+q.ShowArrowHead = 'off';
+q.AutoScale = 'on';
+
+
+
+
+

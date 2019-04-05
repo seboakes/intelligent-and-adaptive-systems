@@ -31,7 +31,6 @@ X = (l1*cos(THETA1))+(l2*cos(THETA1+THETA2))+(l3*cos(THETA1+THETA2+THETA3));    
 Y = (l1*sin(THETA1))+(l2*sin(THETA1+THETA2))+(l3*sin(THETA1+THETA2+THETA3)); % compute y coordinates
 phi = THETA1+THETA2+THETA3;
 
-
 %%%create data sets - X and Y form inputs, THETA the output.
 data1 = [X(:) Y(:) THETA1(:)]; % create x-y-theta dataset for all link angles
 data2 = [X(:) Y(:) THETA2(:)]; 
@@ -43,7 +42,7 @@ data3 = [X(:) Y(:) THETA3(:)];
 %Process ensures that data set is split randomly, but ensures no crossover
 %between validation and training
 
-valid_frac = 0.1;% values used to determine the fraction of total data to be used for validation and test, thus allowing me to vary it as necessary.
+valid_frac = 0.2;% values used to determine the fraction of total data to be used for validation and test, thus allowing me to vary it as necessary.
 test_frac = 0.1; 
 comb_frac = valid_frac+test_frac;
 
@@ -53,7 +52,7 @@ datTot=dim(1);
 
 %mulitplies by the fraction denoting the desired quantity of validation data points, and creates two distinct groups
 %index used to denote either 1 or 0
-idx = randperm(datTot);   % Randomise ordering of the data points, whilst retaining an index relating 
+idx = randperm(datTot);   % Randomise ordering of the data points, whilst retaining an index relating them
 indexToGroup1 = (idx<=valid_frac*datTot);  %validation data
 indexToGroup2 = (idx<=comb_frac*datTot & idx>valid_frac*datTot);   % test data
 indexToGroup3 = (idx>comb_frac*datTot); %training data
@@ -94,6 +93,12 @@ indexToGroup3 = (idx>comb_frac*datTot); %training data
 ValidData3 = data3(indexToGroup1,:); %creates validation data set using index and original data set
 TrainData3 = data3(indexToGroup3,:); %creates training data set 
 TestData3 = data3(indexToGroup2,:);
+
+%%
+
+
+
+
 
 %% Generate fuzzy inference system (genfis) for theta 1 training and validation dataset
 numMFs = 6;
@@ -172,9 +177,12 @@ trnOpt = [400 0.5 0.01 0.9 1.1];
 disp('training first anfis network (for theta1)');
 
 
+
 % [anfis_output, training_error, stepsize, val_fis,val_error] = anfis(training_data,fizzmat1,trnOpt,dispOpt,validation_data,optMethod);]
 
-trnOpt = [100 0.1 0.01 0.9 1.1];
+trnOpt = [100 0.1 0.01 0.9 1.1];   %%training options
+
+
 [anfis1,train_error1,~,Vanfis1,val_error1]=anfis(TrainData1,Tfis1,trnOpt,NaN,ValidData1);
 
 figure('Name', 'Training Error Theta1'); 
@@ -216,7 +224,7 @@ title('Training Error Theta 3');
 
 figure('Name', 'Validation Error Theta3');
 plot(val_error3);
-title('Validation Error Theta 3');
+title('Validation Error Theta 3'); 
 
 
 

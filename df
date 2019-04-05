@@ -1,0 +1,30 @@
+[33mcommit ed9edffb583baf6541ccd80f201ab2f08e9ff3cf[m[33m ([m[1;36mHEAD -> [m[1;32mTestBranch[m[33m, [m[1;31morigin/master[m[33m, [m[1;31morigin/TestBranch[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mmaster[m[33m)[m
+Author: seboakes <sebastian.oakes@gmail.com>
+Date:   Tue Jul 10 16:15:23 2018 +0100
+
+    Added description and author
+
+[33mcommit bd2bdecaad0b9a38b47999c0744de32ddc94e419[m[33m ([m[1;32mplanar_arm3R.m[m[33m)[m
+Author: seboakes <sebastian.oakes@gmail.com>
+Date:   Tue Jul 10 12:22:28 2018 +0100
+
+    added more notes for clarity
+
+[33mcommit 31f12575a16f379c67fab87f8096c3200bc63ea2[m
+Author: seboakes <sebastian.oakes@gmail.com>
+Date:   Mon Jul 9 16:39:23 2018 +0100
+
+    added current state of program, capable of creating training and
+    validation sets
+
+[33mcommit 85bd3287065814a75f8a6bece66f1f529ba77770[m
+Author: seboakes <sebastian.oakes@gmail.com>
+Date:   Tue Jun 26 17:29:04 2018 +0100
+
+    Added welcome page file
+
+[33mcommit a4f39d35cfd0fd85a29c26386a99c6b4c89dc4e4[m
+Author: Sebastian Oakes <37581485+seboakes@users.noreply.github.com>
+Date:   Tue Jun 26 17:20:29 2018 +0100
+
+    Initial commit
